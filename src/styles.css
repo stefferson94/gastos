@@ -360,34 +360,40 @@ button {
 }
 
 .period-header {
-  align-items: center;
+  align-items: start;
 }
 
 .period-focus {
-  width: min(100%, 430px);
-  min-height: 148px;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  border-radius: 18px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 226, 238, 0.92) 0%, rgba(255, 226, 238, 0) 42%),
+    linear-gradient(145deg, #fff8fb 0%, #f7dbe7 58%, #f0c9dc 100%);
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.18), 0 16px 34px rgba(118, 53, 82, 0.1);
+  animation: period-slide-in 300ms ease both;
+}
+
+.period-main {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) 48px;
   gap: 10px;
   align-items: center;
-  border-radius: 18px;
-  padding: 12px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 248, 243, 0.96) 100%);
-  box-shadow: inset 0 0 0 1px #dfe8df, 0 16px 34px rgba(31, 38, 35, 0.06);
-  animation: period-slide-in 300ms ease both;
 }
 
 .period-nav-button {
   width: 48px;
-  min-height: 84px;
+  min-height: 78px;
   border: 0;
   border-radius: 16px;
-  color: #66706a;
-  background: rgba(255, 255, 255, 0.74);
+  color: #8f4968;
+  background: rgba(255, 250, 252, 0.72);
   font-size: 1.6rem;
   font-weight: 760;
-  box-shadow: inset 0 0 0 1px rgba(47, 127, 104, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.16);
   transition: transform 180ms ease, box-shadow 180ms ease, color 180ms ease, background 180ms ease;
 }
 
@@ -395,9 +401,9 @@ button {
 .period-nav-button:focus-visible {
   outline: 0;
   transform: translateY(-1px);
-  color: #1f2623;
-  background: #fff;
-  box-shadow: inset 0 0 0 1px rgba(47, 127, 104, 0.24), 0 8px 18px rgba(31, 38, 35, 0.06);
+  color: #6f2d4d;
+  background: #fffafd;
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.28), 0 8px 18px rgba(118, 53, 82, 0.08);
 }
 
 .period-display {
@@ -409,21 +415,54 @@ button {
 }
 
 .period-display strong {
-  color: #1f2623;
+  color: #332731;
   font-size: clamp(2.1rem, 6vw, 3.3rem);
   line-height: 0.95;
 }
 
-.period-display > span {
-  color: #607168;
+.period-display>span {
+  color: #7e5c6e;
   font-size: 1rem;
   font-weight: 860;
 }
 
 .period-display small {
-  color: #8c4d13;
+  color: #8f4968;
   font-size: 0.72rem;
   font-weight: 820;
+}
+
+.current-period-button {
+  min-height: 28px;
+  border: 1px solid rgba(184, 88, 128, 0.2);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #7b3d5d;
+  background: rgba(255, 250, 252, 0.74);
+  font-size: 0.68rem;
+  font-weight: 850;
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.current-period-button:hover,
+.current-period-button:focus-visible {
+  outline: 0;
+  transform: translateY(-1px);
+  background: #fffafd;
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.22), 0 8px 18px rgba(118, 53, 82, 0.08);
+}
+
+.current-period-button.return-current {
+  color: #8f335c;
+  border-color: rgba(207, 83, 128, 0.28);
+  background: #ffe0ec;
+}
+
+.current-period-button.return-current:hover,
+.current-period-button.return-current:focus-visible {
+  background: #ffd0e2;
+  box-shadow: inset 0 0 0 1px rgba(207, 83, 128, 0.34), 0 8px 18px rgba(118, 53, 82, 0.1);
 }
 
 .period-progress {
@@ -432,7 +471,7 @@ button {
   position: relative;
   margin-top: 8px;
   border-radius: 999px;
-  background: #e7ede7;
+  background: rgba(255, 250, 252, 0.62);
 }
 
 .period-progress span {
@@ -440,7 +479,7 @@ button {
   width: 0;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #2f7f68 0%, #e87e2b 100%);
+  background: linear-gradient(90deg, #b85880 0%, #e283ad 100%);
   transition: width 260ms ease;
 }
 
@@ -450,10 +489,100 @@ button {
   position: absolute;
   top: 50%;
   border-radius: 50%;
-  background: #e87e2b;
-  box-shadow: 0 0 0 4px #fff4e7;
+  background: #cf5b8a;
+  box-shadow: 0 0 0 4px #ffe0ec;
   transform: translate(-50%, -50%);
   transition: left 260ms ease;
+}
+
+.period-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 6px;
+}
+
+.period-month-grid button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 11px;
+  color: #80596b;
+  background: rgba(255, 250, 252, 0.62);
+  font-size: 0.72rem;
+  font-weight: 840;
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.1);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.period-month-grid button:hover,
+.period-month-grid button:focus-visible {
+  outline: 0;
+  transform: translateY(-1px);
+  background: #fffafd;
+  box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.24), 0 8px 18px rgba(118, 53, 82, 0.07);
+}
+
+.period-month-grid button.active {
+  color: #8f335c;
+  background: #ffe0ec;
+  box-shadow: inset 0 0 0 1px rgba(207, 83, 128, 0.34);
+}
+
+.period-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.period-actions .primary-button,
+.period-actions .danger-button,
+.period-actions .ghost-button {
+  width: 100%;
+  border: 1px solid transparent;
+  min-height: 56px;
+  border-radius: 16px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  line-height: 1;
+  text-align: center;
+  box-shadow: 0 12px 26px rgba(31, 38, 35, 0.07);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.period-actions .primary-button:hover,
+.period-actions .danger-button:hover,
+.period-actions .ghost-button:hover,
+.period-actions .primary-button:focus-visible,
+.period-actions .danger-button:focus-visible,
+.period-actions .ghost-button:focus-visible {
+  outline: 0;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(31, 38, 35, 0.11);
+  filter: saturate(1.04);
+}
+
+.add-expense-button {
+  border-color: rgba(52, 151, 118, 0.38) !important;
+  background:
+    radial-gradient(circle at 18% -16%, rgba(93, 205, 158, 0.55) 0%, transparent 36%),
+    linear-gradient(135deg, #0e1914 0%, #173326 36%, #256b53 72%, #31906f 100%);
+  box-shadow: 0 16px 30px rgba(31, 94, 72, 0.2);
+}
+
+.clear-data-button {
+  border-color: rgba(202, 94, 62, 0.2) !important;
+  color: #9b3f28 !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92) 0%, transparent 36%),
+    linear-gradient(135deg, #fff8f5 0%, #ffe4dc 54%, #f7cdbc 100%) !important;
+}
+
+.configure-year-button {
+  border-color: rgba(72, 126, 186, 0.22) !important;
+  color: #275e91 !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92) 0%, transparent 36%),
+    linear-gradient(135deg, #f6fbff 0%, #dcecff 54%, #c7def7 100%) !important;
 }
 
 .eyebrow {
@@ -1281,13 +1410,13 @@ form {
 }
 
 .account-type-bank {
-    border: solid 1px #c0e0ff;
+  border: solid 1px #c0e0ff;
   --account-accent: #3d6d9d;
   --account-gradient: linear-gradient(145deg, #edf6ff 0%, #f8fbff 52%, #ffffff 100%);
 }
 
 .account-type-other {
-    border: solid 1px #ffe4b8;
+  border: solid 1px #ffe4b8;
   --account-accent: #b8832c;
   --account-gradient: linear-gradient(145deg, #fff8e6 0%, #fffdf5 52%, #ffffff 100%);
 }
@@ -2213,19 +2342,88 @@ label {
     padding: 0;
   }
 
+  .period-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    gap: 10px;
+    margin: -18px 0 14px;
+    padding: 10px 0 12px;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
   .period-focus {
     min-width: 0;
     width: 100%;
+    min-height: 118px;
+    padding: 10px;
+    border-radius: 16px;
+    pointer-events: auto;
+    opacity: 1;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255, 226, 238, 0.58) 0%, rgba(255, 226, 238, 0) 44%),
+      linear-gradient(145deg, rgba(255, 248, 251, 0.76) 0%, rgba(247, 219, 231, 0.68) 58%, rgba(240, 201, 220, 0.66) 100%);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 0 1px rgba(184, 88, 128, 0.16), 0 16px 34px rgba(31, 38, 35, 0.12);
+  }
+
+  .period-main {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 8px;
+  }
+
+  .period-nav-button {
+    width: 40px;
+    min-height: 66px;
+    border-radius: 14px;
+  }
+
+  .period-display strong {
+    font-size: 2rem;
+  }
+
+  .period-display>span {
+    font-size: 0.88rem;
+  }
+
+  .period-progress {
+    width: min(100%, 140px);
+    margin-top: 5px;
+  }
+
+  .period-month-grid {
+    display: none;
+  }
+
+  .period-actions {
+    max-width: none;
+    width: 100%;
+    gap: 10px;
   }
 
   .top-actions {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .period-actions .primary-button,
+  .period-actions .danger-button,
+  .period-actions .ghost-button {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 12px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+    line-height: 1;
+    box-shadow: none;
   }
 
   .top-actions .primary-button,
   .top-actions .danger-button {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .metrics-grid {

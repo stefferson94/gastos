@@ -97,8 +97,7 @@ function getMonthStartForYear(year) {
 
 function getSetupYearOptions(referenceYear) {
   const currentYear = getMonthYear(getCurrentMonthId());
-  const selectedYear = Number.isFinite(referenceYear) ? referenceYear : currentYear;
-  return Array.from(new Set([currentYear, selectedYear === currentYear ? currentYear + 1 : selectedYear]));
+  return [currentYear];
 }
 
 function getRelativeMonthId(monthId, offset) {
@@ -251,6 +250,7 @@ function App() {
   const activeMonthNumber = getMonthNumber(activeMonth.id);
   const activeMonthName = activeMonth.label.split(" ")[0];
   const annualProgress = (activeMonthNumber / 12) * 100;
+  const isCurrentMonth = activeMonth.id === getCurrentMonthId();
   const activeIncome = monthlyIncome[activeMonth.id] ?? activeMonth.income;
   const monthExpenses = savedExpenses.filter((expense) => expense.monthId === activeMonth.id);
   const allTransactions = [
@@ -811,6 +811,11 @@ function App() {
     setActiveMonthId(getRelativeMonthId(activeMonth.id, offset));
   }
 
+  function goToCurrentMonth() {
+    clearCreationFeedback();
+    setActiveMonthId(getCurrentMonthId());
+  }
+
   function startFinancialYear(year) {
     const nextYear = Number.parseInt(year, 10);
     if (!Number.isFinite(nextYear) || nextYear < 1900 || nextYear > 2200) {
@@ -1199,25 +1204,60 @@ function App() {
       <section className="content">
         <header className="topbar period-header">
           <section className="period-focus" aria-label="Periodo financeiro atual">
-            <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(-1)} aria-label="Mes anterior">
-              ‹
-            </button>
-            <div className="period-display">
-              <strong>{activeMonthName}</strong>
-              <span>{activeYear}</span>
-              <small>{activeMonthNumber} de 12</small>
-              <div className="period-progress" aria-hidden="true">
-                <span style={{ width: `${annualProgress}%` }} />
-                <i style={{ left: `${annualProgress}%` }} />
+            <div className="period-main">
+              <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(-1)} aria-label="Mes anterior">
+                ‹
+              </button>
+              <div className="period-display">
+                <strong>{activeMonthName}</strong>
+                <span>{activeYear}</span>
+                <small>{activeMonthNumber} de 12</small>
+                <button
+                  className={`current-period-button ${isCurrentMonth ? "" : "return-current"}`}
+                  type="button"
+                  onClick={goToCurrentMonth}
+                >
+                  {isCurrentMonth ? "Hoje" : "Voltar"}
+                </button>
+                <div className="period-progress" aria-hidden="true">
+                  <span style={{ width: `${annualProgress}%` }} />
+                  <i style={{ left: `${annualProgress}%` }} />
+                </div>
               </div>
+              <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(1)} aria-label="Proximo mes">
+                ›
+              </button>
             </div>
-            <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(1)} aria-label="Proximo mes">
-              ›
-            </button>
+            <div className="period-month-grid" aria-label="Meses do ano">
+              {yearMonths.map((month) => (
+                <button
+                  className={month.id === activeMonth.id ? "active" : ""}
+                  key={month.id}
+                  type="button"
+                  onClick={() => {
+                    clearCreationFeedback();
+                    setActiveMonthId(month.id);
+                  }}
+                >
+                  {month.label.split(" ")[0].slice(0, 3)}
+                </button>
+              ))}
+            </div>
           </section>
-          <button className="ghost-button configure-year-button" type="button" onClick={openYearSetup}>
-            Alterar ano
-          </button>
+        </header>
+
+        <header className="topbar actions-header">
+          <div className="top-actions period-actions">
+            <button className="primary-button add-expense-button" type="button" onClick={focusQuickEntry}>
+              <span>Novo gasto</span>
+            </button>
+            <button className="danger-button clear-data-button" type="button" onClick={clearTestData}>
+              <span>Limpar base</span>
+            </button>
+            <button className="ghost-button configure-year-button" type="button" onClick={openYearSetup}>
+              <span>Alterar ano</span>
+            </button>
+          </div>
         </header>
 
         <div className="sidebar-panel spending-timeline">
@@ -1236,13 +1276,6 @@ function App() {
             <small className="timeline-note">Você está no vermelho — pare de gastar e reveja seu orçamento.</small>
           )}
         </div>
-
-        <header className="topbar actions-header">
-          <div className="top-actions">
-            <button className="primary-button" type="button" onClick={focusQuickEntry}><Icon>＋</Icon> Adicionar gasto</button>
-            <button className="danger-button" type="button" onClick={clearTestData}>Limpar testes</button>
-          </div>
-        </header>
 
         {(activeView === "dashboard" || activeView === "lancamentos") && (
           <section className="metrics-grid" aria-label="Resumo financeiro">

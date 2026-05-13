@@ -176,7 +176,7 @@ function App() {
   const [formError, setFormError] = useState("");
   const [collapsedColumns, setCollapsedColumns] = useState({});
   const [isMobileLedger, setIsMobileLedger] = useState(() =>
-    typeof window === "undefined" ? false : window.matchMedia("(max-width: 720px)").matches
+    typeof window === "undefined" ? false : window.matchMedia("(max-width: 1024px)").matches
   );
   const [savedExpenses, setSavedExpenses] = useState(() => {
     try {
@@ -497,7 +497,7 @@ function App() {
   }, [initialYear]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const mediaQuery = window.matchMedia("(max-width: 1024px)");
     const handleChange = (event) => setIsMobileLedger(event.matches);
 
     setIsMobileLedger(mediaQuery.matches);

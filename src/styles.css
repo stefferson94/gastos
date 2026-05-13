@@ -2306,7 +2306,7 @@ label {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .content {
     padding: 18px 14px 110px;
   }

@@ -214,6 +214,32 @@ button {
   padding: 24px;
 }
 
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 18px 12px 4px;
+  color: #7b837e;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.app-footer a {
+  color: #2f7f68;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.app-footer a:hover,
+.app-footer a:focus-visible {
+  color: #1f5e48;
+  text-decoration: underline;
+  outline: 0;
+}
+
 .topbar,
 .panel-heading,
 .top-actions,
@@ -1983,6 +2009,10 @@ label {
 @media (max-width: 720px) {
   .content {
     padding: 18px 14px 110px;
+  }
+
+  .app-footer {
+    padding-bottom: 0;
   }
 
   .topbar,

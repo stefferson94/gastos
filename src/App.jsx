@@ -1680,6 +1680,11 @@ function App() {
           </article>
         </section>
         )}
+
+        <footer className="app-footer">
+          <span>© 2026 Stefferson Luz. Todos os direitos reservados.</span>
+          <a href="mailto:stefferson94@gmail.com">stefferson94@gmail.com</a>
+        </footer>
       </section>
 
       {editingTransaction && (

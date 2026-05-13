@@ -1,4 +1,4 @@
-import { months } from "../data/financeData.js";
+import { createMonth, createSequentialMonths, nextMonthId } from "../data/financeData.js";
 import { clampInteger, formatMoney } from "./money.js";
 
 export function creationMessage(type, count) {
@@ -18,7 +18,6 @@ export function creationMessage(type, count) {
 }
 
 export function buildExpensesFromForm({ form, activeMonth, amount }) {
-  const startIndex = months.findIndex((month) => month.id === activeMonth.id);
   const base = {
     amount,
     group: form.card,
@@ -32,8 +31,7 @@ export function buildExpensesFromForm({ form, activeMonth, amount }) {
     const monthsToCreate = installments - startInstallment + 1;
     const seriesId = createId();
 
-    return months
-      .slice(startIndex, startIndex + monthsToCreate)
+    return createSequentialMonths(activeMonth.id, monthsToCreate)
       .map((month, index) => ({
         ...base,
         id: createId(),
@@ -49,11 +47,10 @@ export function buildExpensesFromForm({ form, activeMonth, amount }) {
   if (form.type === "fixed") {
     const repeatMonths = String(form.repeatMonths).trim()
       ? clampInteger(form.repeatMonths, 1, 60)
-      : months.length - startIndex;
+      : 12;
     const seriesId = createId();
 
-    return months
-      .slice(startIndex, startIndex + repeatMonths)
+    return createSequentialMonths(activeMonth.id, repeatMonths)
       .map((month) => ({
         ...base,
         id: createId(),
@@ -90,12 +87,10 @@ export function completeMissingInstallments(expenses) {
     const info = parseInstallmentDescription(expense.description);
     if (!info || info.current >= info.total) return;
 
-    const startIndex = months.findIndex((month) => month.id === expense.monthId);
-    if (startIndex < 0) return;
     const seriesId = expense.seriesId ?? createId();
 
     for (let nextNumber = info.current + 1; nextNumber <= info.total; nextNumber += 1) {
-      const targetMonth = months[startIndex + (nextNumber - info.current)];
+      const targetMonth = createSequentialMonths(expense.monthId, nextNumber - info.current + 1).at(-1);
       if (!targetMonth) break;
 
       const nextDescription = `${info.base} ${nextNumber}/${info.total}`;
@@ -177,7 +172,7 @@ export function installmentHint(transaction) {
 
   if (!installmentInfo) return "Compra parcelada";
 
-  const nextMonth = months.find((month) => month.id === installmentInfo.nextMonthId);
+  const nextMonth = installmentInfo.nextMonthId ? createMonth(installmentInfo.nextMonthId) : null;
   const nextText = nextMonth ? ` • Proxima: ${nextMonth.label}` : " • Ultima parcela";
 
   return `Parcela ${installmentInfo.current}/${installmentInfo.total}${nextText}`;
@@ -203,11 +198,6 @@ export function getInstallmentInfo(transaction) {
     total,
     nextMonthId: current < total ? nextMonthId(transaction.monthId) : null
   };
-}
-
-function nextMonthId(monthId) {
-  const currentIndex = months.findIndex((month) => month.id === monthId);
-  return months[currentIndex + 1]?.id ?? null;
 }
 
 function createId() {

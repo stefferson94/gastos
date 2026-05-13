@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { months, spreadsheetColumns } from "./data/financeData.js";
+import {
+  createMonthId,
+  createYearMonths,
+  getCurrentMonthId,
+  getMonthNumber,
+  getMonthYear,
+  spreadsheetColumns
+} from "./data/financeData.js";
 import {
   accountTypeLabel,
   accountTypeOptions,
@@ -49,24 +56,15 @@ const transactionTypeOptions = [
   { value: "adjustment", label: "Estorno", icon: "+", hint: "Credito na conta" }
 ];
 
-function getCurrentMonthId() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function getDefaultActiveMonthId() {
   const currentMonthId = getCurrentMonthId();
-  const savedMonthId = localStorage.getItem("balanco-financeiro:mes-ativo");
 
-  if (months.some((month) => month.id === currentMonthId)) {
+  try {
+    const savedMonthId = localStorage.getItem("balanco-financeiro:mes-ativo");
+    return isValidMonthId(savedMonthId) ? savedMonthId : currentMonthId;
+  } catch {
     return currentMonthId;
   }
-
-  if (months.some((month) => month.id === savedMonthId)) {
-    return savedMonthId;
-  }
-
-  return months.at(-1)?.id ?? "2026-05";
 }
 
 function getDefaultActiveView() {
@@ -76,6 +74,41 @@ function getDefaultActiveView() {
   } catch {
     return defaultActiveView;
   }
+}
+
+function getSavedInitialYear() {
+  try {
+    const savedYear = Number.parseInt(localStorage.getItem("balanco-financeiro:ano-inicial"), 10);
+    return Number.isFinite(savedYear) ? savedYear : null;
+  } catch {
+    return null;
+  }
+}
+
+function isValidMonthId(monthId) {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(monthId));
+}
+
+function getMonthStartForYear(year) {
+  const currentMonthId = getCurrentMonthId();
+  const currentYear = getMonthYear(currentMonthId);
+  return year === currentYear ? getMonthNumber(currentMonthId) : 1;
+}
+
+function getSetupYearOptions(referenceYear) {
+  const currentYear = getMonthYear(getCurrentMonthId());
+  const selectedYear = Number.isFinite(referenceYear) ? referenceYear : currentYear;
+  return Array.from(new Set([currentYear, selectedYear === currentYear ? currentYear + 1 : selectedYear]));
+}
+
+function getRelativeMonthId(monthId, offset) {
+  const currentYear = getMonthYear(monthId);
+  const currentMonthNumber = getMonthNumber(monthId);
+  const zeroBasedMonth = currentMonthNumber - 1 + offset;
+  const nextYear = currentYear + Math.floor(zeroBasedMonth / 12);
+  const nextMonthNumber = ((zeroBasedMonth % 12) + 12) % 12 + 1;
+
+  return createMonthId(nextYear, nextMonthNumber);
 }
 
 function Icon({ children }) {
@@ -127,6 +160,8 @@ function EditableMetricCard({ label, value, kind, helper, isEditing, draftValue,
 function App() {
   const [activeView, setActiveView] = useState(getDefaultActiveView);
   const [activeMonthId, setActiveMonthId] = useState(getDefaultActiveMonthId);
+  const [initialYear, setInitialYear] = useState(getSavedInitialYear);
+  const [yearSetupDraft, setYearSetupDraft] = useState(String(getMonthYear(getDefaultActiveMonthId())));
   const [lastCreatedCount, setLastCreatedCount] = useState(0);
   const [lastCreatedType, setLastCreatedType] = useState("");
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -206,8 +241,16 @@ function App() {
     repeatMonths: ""
   });
 
-  const activeMonth = months.find((month) => month.id === activeMonthId) ?? months.at(-1);
-  const activeMonthIndex = months.findIndex((month) => month.id === activeMonth.id);
+  const activeYear = getMonthYear(activeMonthId);
+  const yearMonths = useMemo(() => createYearMonths(activeYear), [activeYear]);
+  const setupYearOptions = useMemo(
+    () => getSetupYearOptions(Number.parseInt(yearSetupDraft, 10)),
+    [yearSetupDraft]
+  );
+  const activeMonth = yearMonths.find((month) => month.id === activeMonthId) ?? yearMonths[0];
+  const activeMonthNumber = getMonthNumber(activeMonth.id);
+  const activeMonthName = activeMonth.label.split(" ")[0];
+  const annualProgress = (activeMonthNumber / 12) * 100;
   const activeIncome = monthlyIncome[activeMonth.id] ?? activeMonth.income;
   const monthExpenses = savedExpenses.filter((expense) => expense.monthId === activeMonth.id);
   const allTransactions = [
@@ -321,7 +364,7 @@ function App() {
   }, [accountSummaries]);
 
   const dashboardMonthlyData = useMemo(() => {
-    return months.map((month) => {
+    return yearMonths.map((month) => {
       const savedMonthExpenses = savedExpenses
         .filter((expense) => expense.monthId === month.id)
         .map((expense, index) => {
@@ -381,10 +424,10 @@ function App() {
         count: transactions.length
       };
     });
-  }, [ledgerOverrides, monthlyIncome, movedColumns, savedExpenses]);
+  }, [ledgerOverrides, monthlyIncome, movedColumns, savedExpenses, yearMonths]);
 
-  const dashboardYear = activeMonth.id.slice(0, 4);
-  const dashboardYearMonths = dashboardMonthlyData.filter((month) => month.id.startsWith(dashboardYear));
+  const dashboardYear = activeYear;
+  const dashboardYearMonths = dashboardMonthlyData;
   const annualIncome = dashboardYearMonths.reduce((sum, month) => sum + month.income, 0);
   const annualSpent = dashboardYearMonths.reduce((sum, month) => sum + month.debt, 0);
   const annualBalance = annualIncome - annualSpent;
@@ -446,6 +489,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem("balanco-financeiro:menu-ativo", activeView);
   }, [activeView]);
+
+  useEffect(() => {
+    if (initialYear) {
+      localStorage.setItem("balanco-financeiro:ano-inicial", String(initialYear));
+    }
+  }, [initialYear]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 720px)");
@@ -757,12 +806,33 @@ function App() {
     setEditingTransaction(null);
   }
 
-  function goToRelativeMonth(offset) {
-    const nextMonth = months[activeMonthIndex + offset];
-    if (nextMonth) {
-      clearCreationFeedback();
-      setActiveMonthId(nextMonth.id);
+  function moveActiveMonth(offset) {
+    clearCreationFeedback();
+    setActiveMonthId(getRelativeMonthId(activeMonth.id, offset));
+  }
+
+  function startFinancialYear(year) {
+    const nextYear = Number.parseInt(year, 10);
+    if (!Number.isFinite(nextYear) || nextYear < 1900 || nextYear > 2200) {
+      setYearSetupDraft(String(getMonthYear(getCurrentMonthId())));
+      return;
     }
+
+    const nextMonthId = createMonthId(nextYear, getMonthStartForYear(nextYear));
+    setInitialYear(nextYear);
+    setActiveMonthId(nextMonthId);
+    setActiveView("dashboard");
+    clearCreationFeedback();
+  }
+
+  function openYearSetup() {
+    setYearSetupDraft(String(activeYear));
+    setInitialYear(null);
+  }
+
+  function submitYearSetup(event) {
+    event.preventDefault();
+    startFinancialYear(yearSetupDraft);
   }
 
   function clearTestData() {
@@ -777,6 +847,7 @@ function App() {
     localStorage.removeItem("balanco-financeiro:cores-contas");
     localStorage.removeItem("balanco-financeiro:tipos-contas");
     localStorage.removeItem("balanco-financeiro:mes-ativo");
+    localStorage.removeItem("balanco-financeiro:ano-inicial");
     localStorage.setItem("balanco-financeiro:reset-version", DATA_RESET_VERSION);
 
     setSavedExpenses([]);
@@ -787,6 +858,8 @@ function App() {
     setAccountColors({});
     setAccountTypes({});
     setActiveMonthId(getDefaultActiveMonthId());
+    setInitialYear(null);
+    setYearSetupDraft(String(getMonthYear(getCurrentMonthId())));
     setLastCreatedCount(0);
     setLastCreatedType("");
     setEditingTransaction(null);
@@ -1050,8 +1123,56 @@ function App() {
     );
   }
 
+  if (!initialYear) {
+    return (
+      <main className="year-setup-screen">
+        <section className="year-setup-panel" aria-label="Configurar ano financeiro">
+          <div className="brand setup-brand">
+            <div className="brand-mark">BF</div>
+            <div>
+              <strong>Balanco Financeiro</strong>
+              <span>Controle pessoal</span>
+            </div>
+          </div>
+
+          <div className="year-setup-copy">
+            <span className="eyebrow">Primeiro passo</span>
+            <h1>Escolha o ano financeiro para começar</h1>
+            <p>O app cria automaticamente Janeiro a Dezembro do ano escolhido. Depois, você navega pelos meses pela régua no topo.</p>
+          </div>
+
+          <div className="year-setup-options" aria-label="Anos sugeridos">
+            {setupYearOptions.map((year) => (
+              <button
+                className={Number.parseInt(yearSetupDraft, 10) === year ? "active" : ""}
+                key={year}
+                type="button"
+                onClick={() => startFinancialYear(year)}
+              >
+                <span>Ano financeiro</span>
+                <strong>{year}</strong>
+              </button>
+            ))}
+          </div>
+
+          <form className="year-setup-custom" onSubmit={submitYearSetup}>
+            <label>
+              Escolher outro ano
+              <input
+                inputMode="numeric"
+                value={yearSetupDraft}
+                onChange={(event) => setYearSetupDraft(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" type="submit">Comecar</button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main className="app-shell">
+    <main className="app-shell app-shell-enter">
       <aside className="sidebar" aria-label="Navegacao principal">
         <div className="brand">
           <div className="brand-mark">BF</div>
@@ -1076,6 +1197,29 @@ function App() {
       </aside>
 
       <section className="content">
+        <header className="topbar period-header">
+          <section className="period-focus" aria-label="Periodo financeiro atual">
+            <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(-1)} aria-label="Mes anterior">
+              ‹
+            </button>
+            <div className="period-display">
+              <strong>{activeMonthName}</strong>
+              <span>{activeYear}</span>
+              <small>{activeMonthNumber} de 12</small>
+              <div className="period-progress" aria-hidden="true">
+                <span style={{ width: `${annualProgress}%` }} />
+                <i style={{ left: `${annualProgress}%` }} />
+              </div>
+            </div>
+            <button className="period-nav-button" type="button" onClick={() => moveActiveMonth(1)} aria-label="Proximo mes">
+              ›
+            </button>
+          </section>
+          <button className="ghost-button configure-year-button" type="button" onClick={openYearSetup}>
+            Alterar ano
+          </button>
+        </header>
+
         <div className="sidebar-panel spending-timeline">
           <div className="timeline-header">
             <span>Histórico de gastos</span>
@@ -1093,23 +1237,7 @@ function App() {
           )}
         </div>
 
-        <header className="topbar">
-          <div className="month-control" aria-label="Selecionar mes">
-            <button className="ghost-button" type="button" onClick={() => goToRelativeMonth(-1)} disabled={activeMonthIndex <= 0}>
-              ‹
-            </button>
-            <select value={activeMonthId} onChange={(event) => {
-              clearCreationFeedback();
-              setActiveMonthId(event.target.value);
-            }}>
-              {months.map((month) => (
-                <option key={month.id} value={month.id}>{month.label}</option>
-              ))}
-            </select>
-            <button className="ghost-button" type="button" onClick={() => goToRelativeMonth(1)} disabled={activeMonthIndex >= months.length - 1}>
-              ›
-            </button>
-          </div>
+        <header className="topbar actions-header">
           <div className="top-actions">
             <button className="primary-button" type="button" onClick={focusQuickEntry}><Icon>＋</Icon> Adicionar gasto</button>
             <button className="danger-button" type="button" onClick={clearTestData}>Limpar testes</button>

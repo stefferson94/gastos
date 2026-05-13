@@ -160,7 +160,7 @@ button {
 }
 
 .spending-timeline .timeline-progress.normal {
-  background: linear-gradient(90deg, #2f7f68 0%, #74a86f 40%, #f2c94c 100%);
+  background: linear-gradient(90deg, #2f7f68 0%, #74a86f 100%);
 }
 
 .spending-timeline .timeline-progress.risk {

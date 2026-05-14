@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import arrumadinLogo from "./assets/arrumadin-logo.png";
 import {
   createMonthId,
   createYearMonths,
@@ -96,8 +97,42 @@ function getRelativeMonthId(monthId, offset) {
   return createMonthId(nextYear, nextMonthNumber);
 }
 
+function getYearOptions(activeYear) {
+  return Array.from({ length: 6 }, (_, index) => activeYear - 2 + index);
+}
+
 function Icon({ children }) {
   return <span className="icon" aria-hidden="true">{children}</span>;
+}
+
+function capitalizeName(name) {
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function BrandIdentity({ subtitle = "Organize seu dinheiro", userName = "" }) {
+  const displayName = capitalizeName(userName);
+  const userInitial = displayName.charAt(0) || "A";
+
+  return (
+    <div className="brand">
+      <img className="brand-logo" src={arrumadinLogo} alt="arrumadin" />
+      {userName ? (
+        <div className="brand-user">
+          <span className="brand-user-avatar">{userInitial}</span>
+          <span>
+            <small>Logado como</small>
+            <strong>{displayName}</strong>
+          </span>
+        </div>
+      ) : (
+        subtitle && <span className="brand-subtitle">{subtitle}</span>
+      )}
+    </div>
+  );
 }
 
 function MetricCard({ label, value, kind, helper }) {
@@ -146,17 +181,10 @@ function WelcomeScreen({ onStart }) {
   return (
     <main className="auth-screen welcome-screen">
       <section className="welcome-panel" aria-label="Boas-vindas">
-        <div className="brand setup-brand">
-          <div className="brand-mark">BF</div>
-          <div>
-            <strong>Balanco Financeiro</strong>
-            <span>Controle pessoal</span>
-          </div>
-        </div>
+        <BrandIdentity subtitle="" />
 
         <div className="welcome-grid">
           <div className="welcome-copy">
-            <span className="eyebrow">Sua rotina financeira</span>
             <h1>Controle seus gastos com clareza desde o primeiro lancamento.</h1>
             <p>
               Organize contas, acompanhe meses, veja seu saldo e prepare seus dados para uma experiencia financeira mais inteligente.
@@ -166,28 +194,37 @@ function WelcomeScreen({ onStart }) {
             </button>
           </div>
 
-          <div className="welcome-preview" aria-hidden="true">
-            <div className="preview-card preview-balance">
-              <span>Saldo previsto</span>
-              <strong>R$ 2.840,00</strong>
-              <small>+12% melhor que o mes anterior</small>
-            </div>
-            <div className="preview-row">
-              <div>
-                <span>Gastos</span>
-                <strong>R$ 860</strong>
+          <div className="phone-preview" aria-hidden="true">
+            <div className="phone-frame">
+              <div className="phone-speaker" />
+              <div className="phone-screen">
+                <div className="preview-card preview-balance">
+                  <span>Saldo previsto</span>
+                  <strong>R$ 2.840,00</strong>
+                  <small>+12% melhor que o mes anterior</small>
+                </div>
+                <div className="preview-row">
+                  <div>
+                    <span>Gastos</span>
+                    <strong>R$ 860</strong>
+                  </div>
+                  <div>
+                    <span>Contas</span>
+                    <strong>6</strong>
+                  </div>
+                </div>
+                <div className="preview-bars">
+                  <span style={{ height: "46%" }} />
+                  <span style={{ height: "64%" }} />
+                  <span style={{ height: "38%" }} />
+                  <span style={{ height: "78%" }} />
+                  <span style={{ height: "54%" }} />
+                </div>
+                <div className="preview-footer">
+                  <span>Alimentacao</span>
+                  <strong>32%</strong>
+                </div>
               </div>
-              <div>
-                <span>Contas</span>
-                <strong>6</strong>
-              </div>
-            </div>
-            <div className="preview-bars">
-              <span style={{ height: "46%" }} />
-              <span style={{ height: "64%" }} />
-              <span style={{ height: "38%" }} />
-              <span style={{ height: "78%" }} />
-              <span style={{ height: "54%" }} />
             </div>
           </div>
         </div>
@@ -202,16 +239,9 @@ function LoginScreen({ mode, draft, error, onChange, onModeChange, onSubmit, onB
   return (
     <main className="auth-screen login-screen">
       <section className="login-panel" aria-label="Login local">
-        <div className="brand setup-brand">
-          <div className="brand-mark">BF</div>
-          <div>
-            <strong>Balanco Financeiro</strong>
-            <span>Acesso local</span>
-          </div>
-        </div>
+        <BrandIdentity subtitle="" />
 
         <div className="login-copy">
-          <span className="eyebrow">{isSignup ? "Criar conta" : "Entrar"}</span>
           <h1>{isSignup ? "Crie seu acesso financeiro." : "Entre no seu espaco financeiro."}</h1>
           <p>Este acesso ainda e local neste navegador. A estrutura ja esta preparada para conectar ao banco de dados depois.</p>
         </div>
@@ -289,6 +319,59 @@ function LoginScreen({ mode, draft, error, onChange, onModeChange, onSubmit, onB
   );
 }
 
+function YearPicker({ activeYear, draft, error, onChange, onClose, onSelectYear, onSubmit }) {
+  return (
+    <div className="year-picker-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="year-picker-sheet"
+        aria-label="Alterar ano financeiro"
+        aria-modal="true"
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="year-picker-handle" aria-hidden="true" />
+        <div className="year-picker-heading">
+          <span className="eyebrow">Periodo</span>
+          <h2>Alterar ano</h2>
+          <p>Escolha um ano financeiro para visualizar seus meses e lancamentos.</p>
+        </div>
+
+        <div className="year-picker-options" aria-label="Anos proximos">
+          {getYearOptions(activeYear).map((year) => (
+            <button
+              className={year === activeYear ? "active" : ""}
+              key={year}
+              type="button"
+              onClick={() => onSelectYear(year)}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+
+        <form className="year-picker-form" onSubmit={onSubmit}>
+          <label>
+            Informar outro ano
+            <input
+              autoFocus
+              inputMode="numeric"
+              value={draft}
+              onChange={(event) => onChange(event.target.value)}
+            />
+          </label>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <div className="year-picker-actions">
+            <button className="ghost-button" type="button" onClick={onClose}>Cancelar</button>
+            <button className="primary-button" type="submit">Aplicar</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 function App() {
   const [localUser, setLocalUser] = useState(getCurrentSession);
   const [authStep, setAuthStep] = useState(() => (getCurrentSession() ? "app" : "welcome"));
@@ -301,6 +384,9 @@ function App() {
     remember: true
   });
   const [loginError, setLoginError] = useState("");
+  const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
+  const [yearPickerDraft, setYearPickerDraft] = useState(String(getMonthYear(getDefaultActiveMonthId())));
+  const [yearPickerError, setYearPickerError] = useState("");
   const [activeView, setActiveView] = useState(getDefaultActiveView);
   const [activeMonthId, setActiveMonthId] = useState(getDefaultActiveMonthId);
   const [lastCreatedCount, setLastCreatedCount] = useState(0);
@@ -951,7 +1037,8 @@ function App() {
   function changeFinancialYear(year) {
     const nextYear = Number.parseInt(year, 10);
     if (!Number.isFinite(nextYear) || nextYear < 1900 || nextYear > 2200) {
-      return;
+      setYearPickerError("Informe um ano entre 1900 e 2200.");
+      return false;
     }
 
     const currentMonthId = getCurrentMonthId();
@@ -962,14 +1049,26 @@ function App() {
     localStorage.setItem("balanco-financeiro:ano-inicial", String(nextYear));
     setActiveMonthId(nextMonthId);
     setActiveView("dashboard");
+    setIsYearPickerOpen(false);
+    setYearPickerError("");
     clearCreationFeedback();
+    return true;
   }
 
   function openYearSetup() {
-    const requestedYear = window.prompt("Informe o ano financeiro", String(activeYear));
-    if (requestedYear !== null) {
-      changeFinancialYear(requestedYear);
-    }
+    setYearPickerDraft(String(activeYear));
+    setYearPickerError("");
+    setIsYearPickerOpen(true);
+  }
+
+  function selectFinancialYear(year) {
+    setYearPickerDraft(String(year));
+    changeFinancialYear(year);
+  }
+
+  function submitYearPicker(event) {
+    event.preventDefault();
+    changeFinancialYear(yearPickerDraft);
   }
 
   function updateLoginDraft(field, value) {
@@ -1316,14 +1415,23 @@ function App() {
 
   return (
     <main className="app-shell app-shell-enter">
+      {isYearPickerOpen && (
+        <YearPicker
+          activeYear={activeYear}
+          draft={yearPickerDraft}
+          error={yearPickerError}
+          onChange={(value) => {
+            setYearPickerDraft(value);
+            setYearPickerError("");
+          }}
+          onClose={() => setIsYearPickerOpen(false)}
+          onSelectYear={selectFinancialYear}
+          onSubmit={submitYearPicker}
+        />
+      )}
+
       <aside className="sidebar" aria-label="Navegacao principal">
-        <div className="brand">
-          <div className="brand-mark">BF</div>
-          <div>
-            <strong>Balanco Financeiro</strong>
-            <span>{localUser.name}</span>
-          </div>
-        </div>
+        <BrandIdentity userName={localUser.name} />
 
         <nav className="nav-list" aria-label="Secoes">
           {navigationItems.map((item) => (
@@ -1984,7 +2092,7 @@ function App() {
         )}
 
         <footer className="app-footer">
-          <span>© 2026 Stefferson Luz. Todos os direitos reservados.</span>
+          <span>© 2026 Stefferson Luz Silva. Todos os direitos reservados.</span>
           <a href="mailto:stefferson94@gmail.com">stefferson94@gmail.com</a>
         </footer>
       </section>

@@ -33,6 +33,12 @@ import {
   parseInstallmentDescription
 } from "./domain/transactions.js";
 import {
+  createLocalAccount,
+  getCurrentSession,
+  loginLocalAccount,
+  logoutLocalAccount
+} from "./services/auth.js";
+import {
   canUseExpenseStorage,
   DATA_RESET_VERSION,
   ensureDataReset,
@@ -76,28 +82,8 @@ function getDefaultActiveView() {
   }
 }
 
-function getSavedInitialYear() {
-  try {
-    const savedYear = Number.parseInt(localStorage.getItem("balanco-financeiro:ano-inicial"), 10);
-    return Number.isFinite(savedYear) ? savedYear : null;
-  } catch {
-    return null;
-  }
-}
-
 function isValidMonthId(monthId) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(monthId));
-}
-
-function getMonthStartForYear(year) {
-  const currentMonthId = getCurrentMonthId();
-  const currentYear = getMonthYear(currentMonthId);
-  return year === currentYear ? getMonthNumber(currentMonthId) : 1;
-}
-
-function getSetupYearOptions(referenceYear) {
-  const currentYear = getMonthYear(getCurrentMonthId());
-  return [currentYear];
 }
 
 function getRelativeMonthId(monthId, offset) {
@@ -156,11 +142,167 @@ function EditableMetricCard({ label, value, kind, helper, isEditing, draftValue,
   );
 }
 
+function WelcomeScreen({ onStart }) {
+  return (
+    <main className="auth-screen welcome-screen">
+      <section className="welcome-panel" aria-label="Boas-vindas">
+        <div className="brand setup-brand">
+          <div className="brand-mark">BF</div>
+          <div>
+            <strong>Balanco Financeiro</strong>
+            <span>Controle pessoal</span>
+          </div>
+        </div>
+
+        <div className="welcome-grid">
+          <div className="welcome-copy">
+            <span className="eyebrow">Sua rotina financeira</span>
+            <h1>Controle seus gastos com clareza desde o primeiro lancamento.</h1>
+            <p>
+              Organize contas, acompanhe meses, veja seu saldo e prepare seus dados para uma experiencia financeira mais inteligente.
+            </p>
+            <button className="primary-button welcome-action" type="button" onClick={onStart}>
+              Comecar agora
+            </button>
+          </div>
+
+          <div className="welcome-preview" aria-hidden="true">
+            <div className="preview-card preview-balance">
+              <span>Saldo previsto</span>
+              <strong>R$ 2.840,00</strong>
+              <small>+12% melhor que o mes anterior</small>
+            </div>
+            <div className="preview-row">
+              <div>
+                <span>Gastos</span>
+                <strong>R$ 860</strong>
+              </div>
+              <div>
+                <span>Contas</span>
+                <strong>6</strong>
+              </div>
+            </div>
+            <div className="preview-bars">
+              <span style={{ height: "46%" }} />
+              <span style={{ height: "64%" }} />
+              <span style={{ height: "38%" }} />
+              <span style={{ height: "78%" }} />
+              <span style={{ height: "54%" }} />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function LoginScreen({ mode, draft, error, onChange, onModeChange, onSubmit, onBack }) {
+  const isSignup = mode === "signup";
+
+  return (
+    <main className="auth-screen login-screen">
+      <section className="login-panel" aria-label="Login local">
+        <div className="brand setup-brand">
+          <div className="brand-mark">BF</div>
+          <div>
+            <strong>Balanco Financeiro</strong>
+            <span>Acesso local</span>
+          </div>
+        </div>
+
+        <div className="login-copy">
+          <span className="eyebrow">{isSignup ? "Criar conta" : "Entrar"}</span>
+          <h1>{isSignup ? "Crie seu acesso financeiro." : "Entre no seu espaco financeiro."}</h1>
+          <p>Este acesso ainda e local neste navegador. A estrutura ja esta preparada para conectar ao banco de dados depois.</p>
+        </div>
+
+        <div className="auth-mode-tabs" aria-label="Modo de acesso">
+          <button className={!isSignup ? "active" : ""} type="button" onClick={() => onModeChange("signin")}>
+            Entrar
+          </button>
+          <button className={isSignup ? "active" : ""} type="button" onClick={() => onModeChange("signup")}>
+            Criar conta
+          </button>
+        </div>
+
+        <form className="login-form" onSubmit={onSubmit}>
+          {isSignup && (
+            <label>
+              Nome
+              <input
+                autoFocus
+                value={draft.name}
+                onChange={(event) => onChange("name", event.target.value)}
+                placeholder="Seu nome"
+              />
+            </label>
+          )}
+          <label>
+            E-mail
+            <input
+              autoFocus={!isSignup}
+              inputMode="email"
+              value={draft.email}
+              onChange={(event) => onChange("email", event.target.value)}
+              placeholder="voce@email.com"
+            />
+          </label>
+          <label>
+            Senha
+            <input
+              type="password"
+              value={draft.password}
+              onChange={(event) => onChange("password", event.target.value)}
+              placeholder="Senha local"
+            />
+          </label>
+          {isSignup && (
+            <label>
+              Confirmar senha
+              <input
+                type="password"
+                value={draft.confirmPassword}
+                onChange={(event) => onChange("confirmPassword", event.target.value)}
+                placeholder="Repita a senha"
+              />
+            </label>
+          )}
+
+          <label className="remember-access">
+            <input
+              type="checkbox"
+              checked={draft.remember}
+              onChange={(event) => onChange("remember", event.target.checked)}
+            />
+            Manter conectado neste navegador
+          </label>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <div className="login-actions">
+            <button className="primary-button" type="submit">{isSignup ? "Criar conta" : "Entrar"}</button>
+            <button className="ghost-button" type="button" onClick={onBack}>Voltar</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 function App() {
+  const [localUser, setLocalUser] = useState(getCurrentSession);
+  const [authStep, setAuthStep] = useState(() => (getCurrentSession() ? "app" : "welcome"));
+  const [authMode, setAuthMode] = useState("signin");
+  const [loginDraft, setLoginDraft] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    remember: true
+  });
+  const [loginError, setLoginError] = useState("");
   const [activeView, setActiveView] = useState(getDefaultActiveView);
   const [activeMonthId, setActiveMonthId] = useState(getDefaultActiveMonthId);
-  const [initialYear, setInitialYear] = useState(getSavedInitialYear);
-  const [yearSetupDraft, setYearSetupDraft] = useState(String(getMonthYear(getDefaultActiveMonthId())));
   const [lastCreatedCount, setLastCreatedCount] = useState(0);
   const [lastCreatedType, setLastCreatedType] = useState("");
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -242,10 +384,6 @@ function App() {
 
   const activeYear = getMonthYear(activeMonthId);
   const yearMonths = useMemo(() => createYearMonths(activeYear), [activeYear]);
-  const setupYearOptions = useMemo(
-    () => getSetupYearOptions(Number.parseInt(yearSetupDraft, 10)),
-    [yearSetupDraft]
-  );
   const activeMonth = yearMonths.find((month) => month.id === activeMonthId) ?? yearMonths[0];
   const activeMonthNumber = getMonthNumber(activeMonth.id);
   const activeMonthName = activeMonth.label.split(" ")[0];
@@ -489,12 +627,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem("balanco-financeiro:menu-ativo", activeView);
   }, [activeView]);
-
-  useEffect(() => {
-    if (initialYear) {
-      localStorage.setItem("balanco-financeiro:ano-inicial", String(initialYear));
-    }
-  }, [initialYear]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1024px)");
@@ -816,28 +948,66 @@ function App() {
     setActiveMonthId(getCurrentMonthId());
   }
 
-  function startFinancialYear(year) {
+  function changeFinancialYear(year) {
     const nextYear = Number.parseInt(year, 10);
     if (!Number.isFinite(nextYear) || nextYear < 1900 || nextYear > 2200) {
-      setYearSetupDraft(String(getMonthYear(getCurrentMonthId())));
       return;
     }
 
-    const nextMonthId = createMonthId(nextYear, getMonthStartForYear(nextYear));
-    setInitialYear(nextYear);
+    const currentMonthId = getCurrentMonthId();
+    const currentYear = getMonthYear(currentMonthId);
+    const nextMonthNumber = nextYear === currentYear ? getMonthNumber(currentMonthId) : 1;
+    const nextMonthId = createMonthId(nextYear, nextMonthNumber);
+
+    localStorage.setItem("balanco-financeiro:ano-inicial", String(nextYear));
     setActiveMonthId(nextMonthId);
     setActiveView("dashboard");
     clearCreationFeedback();
   }
 
   function openYearSetup() {
-    setYearSetupDraft(String(activeYear));
-    setInitialYear(null);
+    const requestedYear = window.prompt("Informe o ano financeiro", String(activeYear));
+    if (requestedYear !== null) {
+      changeFinancialYear(requestedYear);
+    }
   }
 
-  function submitYearSetup(event) {
+  function updateLoginDraft(field, value) {
+    setLoginDraft((current) => ({
+      ...current,
+      [field]: value
+    }));
+    setLoginError("");
+  }
+
+  function changeAuthMode(nextMode) {
+    setAuthMode(nextMode);
+    setLoginError("");
+  }
+
+  function submitLocalLogin(event) {
     event.preventDefault();
-    startFinancialYear(yearSetupDraft);
+
+    const result = authMode === "signup"
+      ? createLocalAccount(loginDraft)
+      : loginLocalAccount(loginDraft);
+
+    if (!result.ok) {
+      setLoginError(result.message);
+      return;
+    }
+
+    setLocalUser(result.user);
+    setAuthStep("app");
+  }
+
+  function logoutLocalUser() {
+    logoutLocalAccount();
+    setLocalUser(null);
+    setAuthStep("welcome");
+    setAuthMode("signin");
+    setLoginDraft({ name: "", email: "", password: "", confirmPassword: "", remember: true });
+    setLoginError("");
   }
 
   function clearTestData() {
@@ -863,8 +1033,6 @@ function App() {
     setAccountColors({});
     setAccountTypes({});
     setActiveMonthId(getDefaultActiveMonthId());
-    setInitialYear(null);
-    setYearSetupDraft(String(getMonthYear(getCurrentMonthId())));
     setLastCreatedCount(0);
     setLastCreatedType("");
     setEditingTransaction(null);
@@ -1128,51 +1296,21 @@ function App() {
     );
   }
 
-  if (!initialYear) {
+  if (!localUser && authStep === "welcome") {
+    return <WelcomeScreen onStart={() => setAuthStep("login")} />;
+  }
+
+  if (!localUser) {
     return (
-      <main className="year-setup-screen">
-        <section className="year-setup-panel" aria-label="Configurar ano financeiro">
-          <div className="brand setup-brand">
-            <div className="brand-mark">BF</div>
-            <div>
-              <strong>Balanco Financeiro</strong>
-              <span>Controle pessoal</span>
-            </div>
-          </div>
-
-          <div className="year-setup-copy">
-            <span className="eyebrow">Primeiro passo</span>
-            <h1>Escolha o ano financeiro para começar</h1>
-            <p>O app cria automaticamente Janeiro a Dezembro do ano escolhido. Depois, você navega pelos meses pela régua no topo.</p>
-          </div>
-
-          <div className="year-setup-options" aria-label="Anos sugeridos">
-            {setupYearOptions.map((year) => (
-              <button
-                className={Number.parseInt(yearSetupDraft, 10) === year ? "active" : ""}
-                key={year}
-                type="button"
-                onClick={() => startFinancialYear(year)}
-              >
-                <span>Ano financeiro</span>
-                <strong>{year}</strong>
-              </button>
-            ))}
-          </div>
-
-          <form className="year-setup-custom" onSubmit={submitYearSetup}>
-            <label>
-              Escolher outro ano
-              <input
-                inputMode="numeric"
-                value={yearSetupDraft}
-                onChange={(event) => setYearSetupDraft(event.target.value)}
-              />
-            </label>
-            <button className="primary-button" type="submit">Comecar</button>
-          </form>
-        </section>
-      </main>
+      <LoginScreen
+        mode={authMode}
+        draft={loginDraft}
+        error={loginError}
+        onBack={() => setAuthStep("welcome")}
+        onChange={updateLoginDraft}
+        onModeChange={changeAuthMode}
+        onSubmit={submitLocalLogin}
+      />
     );
   }
 
@@ -1183,7 +1321,7 @@ function App() {
           <div className="brand-mark">BF</div>
           <div>
             <strong>Balanco Financeiro</strong>
-            <span>Controle pessoal</span>
+            <span>{localUser.name}</span>
           </div>
         </div>
 
@@ -1198,6 +1336,9 @@ function App() {
               <Icon>{item.icon}</Icon> {item.label}
             </button>
           ))}
+          <button className="nav-item logout-button" type="button" onClick={logoutLocalUser}>
+            <Icon>↩</Icon> Sair
+          </button>
         </nav>
       </aside>
 

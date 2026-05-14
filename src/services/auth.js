@@ -30,8 +30,32 @@ function hashLocalPassword(password) {
   return `local-${(hash >>> 0).toString(16)}`;
 }
 
+function getDefaultLocalUser() {
+  return {
+    id: "user-demo-stefferson",
+    name: "Stefferson",
+    email: "stefferson94@gmail.com",
+    passwordHash: hashLocalPassword("stefferson"),
+    createdAt: new Date().toISOString()
+  };
+}
+
+function ensureDefaultLocalUser() {
+  const users = readJson(localStorage, usersKey, []);
+  const defaultUser = getDefaultLocalUser();
+
+  if (users.some((user) => user.email === defaultUser.email)) {
+    return users;
+  }
+
+  const nextUsers = [...users, defaultUser];
+  saveUsers(nextUsers);
+  return nextUsers;
+}
+
+
 function getUsers() {
-  return readJson(localStorage, usersKey, []);
+  return ensureDefaultLocalUser();
 }
 
 function saveUsers(users) {

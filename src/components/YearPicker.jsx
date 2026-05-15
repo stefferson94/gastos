@@ -36,7 +36,6 @@ export function YearPicker({ activeYear, draft, error, onChange, onClose, onSele
           <label>
             Informar outro ano
             <input
-              autoFocus
               inputMode="numeric"
               value={draft}
               onChange={(event) => onChange(event.target.value)}

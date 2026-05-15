@@ -1821,7 +1821,14 @@ function App() {
 
         <footer className="app-footer">
           <span>© 2026 Stefferson Luz Silva. Todos os direitos reservados.</span>
-          <a href="mailto:stefferson94@gmail.com">stefferson94@gmail.com</a>
+          <a href="https://instagram.com/steffersonluz" target="_blank" rel="noopener noreferrer" class="instagram-link">
+            <svg class="instagram-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="5"/>
+              <circle cx="17.5" cy="6.5" r="1.5"/>
+            </svg>
+            steffersonluz
+          </a>
         </footer>
       </section>
 

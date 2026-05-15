@@ -744,8 +744,8 @@ button {
   inset: 0;
   z-index: 90;
   display: grid;
-  place-items: center;
-  padding: 24px;
+  place-items: start center;
+  padding: 72px 24px 24px;
   background: rgba(31, 38, 35, 0.22);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -754,6 +754,8 @@ button {
 
 .year-picker-sheet {
   width: min(100%, 520px);
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
   display: grid;
   gap: 20px;
   border: 1px solid rgba(226, 230, 225, 0.88);
@@ -861,6 +863,21 @@ button {
   color: #2f7f68;
   font-weight: 780;
   text-decoration: none;
+}
+
+.instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 180ms ease;
+}
+
+.instagram-link:hover {
+  opacity: 0.78;
+}
+
+.instagram-icon {
+  flex-shrink: 0;
 }
 
 .app-footer a:hover,
@@ -2945,28 +2962,23 @@ label {
   }
 
   .year-picker-backdrop {
-    align-items: end;
-    place-items: end stretch;
-    padding: 12px;
+    align-items: start;
+    place-items: start stretch;
+    padding: 78px 12px 12px;
     background: rgba(31, 38, 35, 0.18);
   }
 
   .year-picker-sheet {
     width: 100%;
-    max-height: min(86vh, 620px);
+    max-height: calc(100vh - 96px);
     overflow-y: auto;
-    border-radius: 22px 22px 18px 18px;
-    padding: 10px 18px 18px;
-    animation-name: sheet-up;
+    border-radius: 20px;
+    padding: 18px;
+    animation-name: sheet-pop;
   }
 
   .year-picker-handle {
-    width: 44px;
-    height: 5px;
-    display: block;
-    justify-self: center;
-    border-radius: 999px;
-    background: rgba(143, 51, 92, 0.22);
+    display: none;
   }
 
   .year-picker-heading h2 {

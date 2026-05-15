@@ -820,10 +820,20 @@ function App() {
   function logoutLocalUser() {
     logoutLocalAccount();
     setLocalUser(null);
-    setAuthStep("welcome");
+    setAuthStep("login");
     setAuthMode("signin");
     setLoginDraft({ name: "", email: "", password: "", confirmPassword: "", remember: true });
     setLoginError("");
+  }
+
+  function quickAccessApp() {
+    const result = loginLocalAccount({ email: "admin@admin.com", password: "admin", remember: true });
+    if (!result.ok) {
+      setLoginError(result.message);
+      return;
+    }
+    setLocalUser(result.user);
+    setAuthStep("app");
   }
 
   function clearTestData() {
@@ -1126,6 +1136,7 @@ function App() {
         onChange={updateLoginDraft}
         onModeChange={changeAuthMode}
         onSubmit={submitLocalLogin}
+        onQuickAccess={quickAccessApp}
       />
     );
   }

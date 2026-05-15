@@ -32,10 +32,10 @@ function hashLocalPassword(password) {
 
 function getDefaultLocalUser() {
   return {
-    id: "user-demo-stefferson",
-    name: "Stefferson",
-    email: "stefferson94@gmail.com",
-    passwordHash: hashLocalPassword("stefferson"),
+    id: "user-demo-admin",
+    name: "admin",
+    email: "admin@admin.com",
+    passwordHash: hashLocalPassword("admin"),
     createdAt: new Date().toISOString()
   };
 }
